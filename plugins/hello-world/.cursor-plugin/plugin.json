@@ -1,0 +1,17 @@
+{
+  "name": "hello-world",
+  "displayName": "Hello World",
+  "version": "0.1.0",
+  "description": "Minimal Node.js hook example: greets the agent on session start and logs every invocation for inspection.",
+  "author": {
+    "name": "Yuri Novoseltsev"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "hooks",
+    "example",
+    "node",
+    "hello-world"
+  ],
+  "hooks": "hooks/hooks.json"
+}
