@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" sessionStart",
+        "timeout": 15
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" sessionEnd",
+        "timeout": 15
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" beforeSubmitPrompt",
+        "timeout": 15
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" afterAgentResponse",
+        "timeout": 15
+      }
+    ],
+    "afterAgentThought": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" afterAgentThought",
+        "timeout": 15
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" preToolUse",
+        "timeout": 30
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" postToolUse",
+        "timeout": 30
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" postToolUseFailure",
+        "timeout": 15
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" beforeShellExecution",
+        "timeout": 30
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" afterShellExecution",
+        "timeout": 30
+      }
+    ],
+    "beforeMCPExecution": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" beforeMCPExecution",
+        "timeout": 15
+      }
+    ],
+    "afterMCPExecution": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" afterMCPExecution",
+        "timeout": 15
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" beforeReadFile",
+        "timeout": 15
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" afterFileEdit",
+        "timeout": 30
+      }
+    ],
+    "subagentStart": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" subagentStart",
+        "timeout": 15
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" subagentStop",
+        "timeout": 15
+      }
+    ],
+    "preCompact": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" preCompact",
+        "timeout": 15
+      }
+    ],
+    "stop": [
+      {
+        "command": "node \"${CURSOR_PLUGIN_ROOT}/hooks/log_event.js\" stop",
+        "timeout": 15
+      }
+    ]
+  }
+}

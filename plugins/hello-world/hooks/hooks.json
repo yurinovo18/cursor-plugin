@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "node \"./scripts/hello-world.mjs\"",
+        "timeout": 10
+      }
+    ]
+  }
+}

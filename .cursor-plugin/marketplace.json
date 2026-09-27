@@ -14,6 +14,16 @@
       "name": "jfrog",
       "source": "jfrog",
       "description": "JFrog Platform integration with MCP, security skills, and supply-chain best practices"
+    },
+    {
+      "name": "hello-world",
+      "source": "hello-world",
+      "description": "Minimal Node.js hook example that greets the agent on session start"
+    },
+    {
+      "name": "agentic-process-evidence",
+      "source": "agentic-process-evidence",
+      "description": "Records agent sessions, binds file changes to git, and ships session bundles to Artifactory"
     }
   ]
 }

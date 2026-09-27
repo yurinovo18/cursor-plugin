@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>apptrust · zen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --paper: #f5f4f1; --mist: #ebeae5; --chalk: #ffffff;
+    --hair: rgba(42, 40, 36, 0.1); --ink: #2a2824; --soft: #5c5a54; --whisper: #8a877f;
+    --gin: #4a6a58; --gin-bg: rgba(74, 106, 88, 0.12);
+    --g3: #9a4f45; --g3-bg: rgba(154, 79, 69, 0.12);
+    --font: "Figtree", "Avenir Next", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; color: var(--ink); font-family: var(--font); font-size: 13px; line-height: 1.4; background: var(--paper); overflow: hidden; }
+  button { font-family: inherit; font-size: 12px; font-weight: 500; color: var(--soft); background: transparent; border: 1px solid var(--hair); border-radius: 6px; padding: 4px 9px; cursor: pointer; }
+  button:hover { color: var(--ink); background: var(--chalk); }
+  button.primary { color: var(--chalk); background: var(--ink); border-color: var(--ink); }
+  .shell { display: grid; grid-template-rows: auto 1fr; height: 100vh; }
+  .top { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--hair); background: var(--chalk); }
+  .brand { font-weight: 600; }
+  .muted { color: var(--whisper); font-size: 12px; }
+  .body { display: grid; grid-template-columns: 240px 1fr 240px; min-height: 0; }
+  .rail, .meta { overflow: auto; padding: 12px; background: var(--mist); }
+  .rail { border-right: 1px solid var(--hair); }
+  .meta { border-left: 1px solid var(--hair); }
+  .main { overflow: auto; padding: 18px 22px; }
+  .conv { display: block; width: 100%; text-align: left; margin: 0 0 6px; padding: 8px 10px; border-radius: 8px; border: 1px solid transparent; }
+  .conv.on { background: var(--chalk); border-color: var(--hair); color: var(--ink); }
+  .bubble { max-width: 42rem; margin: 0 0 14px; padding: 10px 12px; background: var(--chalk); border: 1px solid var(--hair); border-radius: 10px; }
+  .bubble.tool { background: var(--mist); }
+  .k { font-size: 11px; color: var(--whisper); text-transform: uppercase; letter-spacing: 0.06em; }
+  .mono { font-family: var(--mono); font-size: 12px; }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--gin-bg); color: var(--gin); margin-right: 4px; }
+  .tag.fail { background: var(--g3-bg); color: var(--g3); }
+  pre { white-space: pre-wrap; word-break: break-word; margin: 6px 0 0; font-family: var(--mono); font-size: 12px; }
+  h2 { font-size: 12px; font-weight: 600; color: var(--soft); margin: 0 0 10px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="brand">apptrust zen</div>
+    <div class="muted" id="db"></div>
+    <div style="flex:1"></div>
+    <button id="pub" class="primary">publish to RT</button>
+  </div>
+  <div class="body">
+    <aside class="rail" id="rail"></aside>
+    <main class="main" id="main"><div class="muted">pick a session</div></main>
+    <aside class="meta" id="meta"></aside>
+  </div>
+</div>
+<script>
+let cid = null;
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+}
+function short(id) { return (id || "").slice(0, 8); }
+async function loadPulse() {
+  const pulse = await (await fetch("/api/pulse", {cache: "no-store"})).json();
+  document.getElementById("db").textContent = pulse.db_path || "";
+  const convs = (pulse.conversations || []).slice().reverse();
+  document.getElementById("rail").innerHTML = "<h2>sessions</h2>" + (convs.map(c =>
+    `<button class="conv ${c.cid===cid?"on":""}" data-cid="${esc(c.cid)}"><div class="mono">${esc(short(c.cid))}</div><div class="muted">${c.n} events</div></button>`
+  ).join("") || "<div class='muted'>empty DB</div>");
+  document.querySelectorAll(".conv").forEach(b => b.onclick = () => openSession(b.dataset.cid));
+}
+function gitLine(g) {
+  if (!g || !g.resolved) return "";
+  return `<div class="muted mono">${esc(g.name || "")} · ${esc(g.branch || "")} · ${esc(g.head_short || "")}</div>`;
+}
+async function openSession(id) {
+  cid = id;
+  await loadPulse();
+  const s = await (await fetch(`/api/session?cid=${encodeURIComponent(id)}`, {cache:"no-store"})).json();
+  if (s.empty) { document.getElementById("main").innerHTML = "<div class='muted'>no events</div>"; return; }
+  document.getElementById("main").innerHTML = (s.timeline || []).map(e => {
+    const ch = (e.file_change || {}).changed || {};
+    const tags = [];
+    if (e.kind === "tool") tags.push(`<span class="tag">${esc(e.tool_name)}</span>`);
+    if (ch.status === "pass") tags.push(`<span class="tag">changed</span>`);
+    if (ch.status === "fail") tags.push(`<span class="tag fail">unchanged</span>`);
+    const paths = (e.candidate_paths || []).map(p => `<div class="mono muted">${esc(p)}</div>`).join("");
+    const git = (e.git || []).map(gitLine).join("");
+    const evd = ch.evidence ? `<div class="muted">${esc(ch.evidence)}</div>` : "";
+    return `<article class="bubble ${e.kind==="tool"?"tool":""}"><div class="k">${esc(e.kind)} · ${esc(e.ts_iso)}</div><div>${tags.join(" ")}</div><pre>${esc(e.text)}</pre>${paths}${git}${evd}</article>`;
+  }).join("") || "<div class='muted'>no timeline rows</div>";
+  const remotes = (s.git_remotes || []).map(r =>
+    `<div class="bubble"><div class="k">${esc(r.name || "repo")}</div><div class="mono">${esc(r.branch || "")} @ ${esc(r.head_short || "")}</div><div class="muted">${esc(r.remote || r.root || "")}</div>${(r.commits || []).map(c => `<div class="mono">${esc(c.short || "")} ${esc(c.subject || "")}</div>`).join("")}</div>`
+  ).join("");
+  document.getElementById("meta").innerHTML =
+    `<h2>git</h2><div class="muted">${s.tool_calls || 0} tools · ${s.flagged || 0} write-tools</div>` + (remotes || "<div class='muted'>no git coords</div>");
+}
+document.getElementById("pub").onclick = async () => {
+  if (!cid) return;
+  const r = await fetch("/api/session/publish", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({cid}) });
+  const out = await r.json();
+  alert(out.publish && out.publish.ok ? ("uploaded " + out.publish.target) : (out.error || JSON.stringify(out)));
+};
+loadPulse();
+setInterval(loadPulse, 4000);
+</script>
+</body>
+</html>
