@@ -105,6 +105,64 @@ test("tick stamps new HEAD on session logs then uploads all of them", () => {
   assert.equal(report.published[0].conversation_id, "sess-1");
 });
 
+test("tick acks a successful publish so a second HEAD move in the same session still uploads", () => {
+  const appended = [];
+  const published = [];
+  const acked = [];
+  let n = 0;
+  const watched = {
+    detectCommits: () => {
+      n += 1;
+      if (n === 1) {
+        return [{ root: "/work", sha: "bbb", previous: "aaa", cids: ["sess-1"], files: ["/work/a.js"] }];
+      }
+      return [{ root: "/work", sha: "ccc", previous: "bbb", cids: ["sess-1"], files: ["/work/b.js"] }];
+    },
+    ack: (commits, opts) => acked.push({ commits, opts }),
+    repos: () => ["/work"],
+    files: () => [],
+  };
+  const store = {
+    iterEvents: () => [{ conversation_id: "sess-1", affected_git: [{ root: "/work" }] }],
+    append: (row) => appended.push(row),
+  };
+  const exportSession = (cid, opts) => {
+    published.push({ cid, opts });
+    return { publish: { ok: true, target: "repo/sess.tgz" } };
+  };
+
+  tick({ store, watched, exportSession });
+  tick({ store, watched, exportSession });
+
+  assert.equal(published.length, 2);
+  assert.equal(appended[0].git_head_change.sha, "bbb");
+  assert.equal(appended[1].git_head_change.sha, "ccc");
+  assert.equal(acked.length, 2);
+  assert.equal(acked[0].commits[0].sha, "bbb");
+  assert.equal(acked[1].commits[0].sha, "ccc");
+  assert.equal(acked[0].opts && acked[0].opts.revert, undefined);
+});
+
+test("tick reverts logged HEAD when every matching session fails to publish", () => {
+  const acked = [];
+  tick({
+    store: {
+      iterEvents: () => [],
+      append: () => {},
+    },
+    watched: {
+      detectCommits: () => [{ root: "/work", sha: "bbb", previous: "aaa", cids: ["sess-1"], files: ["/work/a.js"] }],
+      ack: (commits, opts) => acked.push({ commits, opts }),
+      repos: () => ["/work"],
+      files: () => [],
+    },
+    exportSession: () => ({ error: "upload failed", publish: { ok: false } }),
+  });
+  assert.equal(acked.length, 1);
+  assert.equal(acked[0].opts.revert, true);
+  assert.equal(acked[0].commits[0].sha, "bbb");
+});
+
 test("tick dry-run does not stamp logs or publish", () => {
   const appended = [];
   const published = [];

@@ -130,6 +130,21 @@ class WatchedGit {
     if (opts.persist !== false) this._save();
     return found;
   }
+
+  ack(commits, opts) {
+    opts = opts || {};
+    for (const commit of commits || []) {
+      const repo = this.data.repos[commit.root];
+      if (!repo) continue;
+      if (opts.revert) {
+        if (commit.previous) repo.logged_sha = commit.previous;
+        continue;
+      }
+      if (commit.sha) repo.logged_sha = commit.sha;
+      repo.files = [];
+    }
+    this._save();
+  }
 }
 
 module.exports = { WatchedGit, defaultWatchedPath };

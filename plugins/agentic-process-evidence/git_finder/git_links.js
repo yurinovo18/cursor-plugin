@@ -67,6 +67,26 @@ function enrichCommitTags(session, events) {
       });
     }
   }
+  const remotesByRoot = {};
+  for (const grp of session.git_remotes || []) {
+    if (grp && grp.root) remotesByRoot[grp.root] = grp;
+  }
+  for (const row of events || []) {
+    if ((row.event || row.hook_event_name) !== "gitHeadChanged") continue;
+    const ch = row.git_head_change || {};
+    if (!ch.sha) continue;
+    const grp = remotesByRoot[ch.root] || {};
+    add({
+      sha: ch.sha,
+      short: ch.sha.slice(0, 12),
+      remote: grp.remote,
+      repo_name: grp.name,
+      repo_root: ch.root,
+      branch: grp.branch,
+      files: (ch.files || []).map((f) => path.basename(f)).slice(0, 40),
+      role: "session_authored",
+    });
+  }
   const [sinceIso] = sessionWindow(events);
   const changed = changedFiles(session);
   for (const grp of session.git_remotes || []) {

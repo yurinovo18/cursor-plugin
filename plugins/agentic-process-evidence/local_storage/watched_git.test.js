@@ -61,6 +61,57 @@ test("detectCommits fires when HEAD moves off the logged commit", () => {
   assert.equal(store.data.repos["/work"].logged_sha, "bbb222");
 });
 
+test("ack after a publish clears files but keeps the session so a later HEAD move still fires", () => {
+  let head = "aaa111";
+  const store = new WatchedGit(tmpStore(), { head: () => head });
+  store.noteRepo({
+    root: "/work",
+    git_dir: "/work/.git",
+    head: "aaa111",
+    path: "/work/src/a.js",
+  }, "sess-1");
+  head = "bbb222";
+  const first = store.detectCommits();
+  store.ack(first);
+  const repo = store.data.repos["/work"];
+  assert.equal(repo.logged_sha, "bbb222");
+  assert.deepEqual(repo.files, []);
+  assert.deepEqual(repo.cids, ["sess-1"]);
+
+  store.noteRepo({
+    root: "/work",
+    git_dir: "/work/.git",
+    head: "bbb222",
+    path: "/work/src/b.js",
+  }, "sess-1");
+  assert.equal(store.data.repos["/work"].logged_sha, "bbb222");
+  assert.deepEqual(store.data.repos["/work"].files, ["/work/src/b.js"]);
+
+  head = "ccc333";
+  const second = store.detectCommits();
+  assert.equal(second.length, 1);
+  assert.equal(second[0].previous, "bbb222");
+  assert.equal(second[0].sha, "ccc333");
+  assert.deepEqual(second[0].cids, ["sess-1"]);
+  assert.deepEqual(second[0].files, ["/work/src/b.js"]);
+});
+
+test("ack revert restores logged_sha when publish failed so the same commit can retry", () => {
+  let head = "bbb222";
+  const store = new WatchedGit(tmpStore(), { head: () => head });
+  store.noteRepo({
+    root: "/work",
+    git_dir: "/work/.git",
+    head: "aaa111",
+    path: "/work/src/a.js",
+  }, "sess-1");
+  const found = store.detectCommits();
+  store.ack(found, { revert: true });
+  assert.equal(store.data.repos["/work"].logged_sha, "aaa111");
+  assert.deepEqual(store.data.repos["/work"].files, ["/work/src/a.js"]);
+  assert.deepEqual(store.detectCommits().map((c) => c.sha), ["bbb222"]);
+});
+
 test("persists and reloads the repo collection", () => {
   const filePath = tmpStore();
   const a = new WatchedGit(filePath, { head: () => "aaa111" });

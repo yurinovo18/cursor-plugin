@@ -181,12 +181,27 @@ function tick(opts) {
     exportSession: opts.exportSession,
     dryRun: opts.dryRun,
   });
+  if (persist && typeof watched.ack === "function") ackPublished(watched, commits, report);
   report.roots = watched.repos();
   report.files = watched.files().map((f) => f.path);
   report.commits = commits;
   state.last_run = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
   if (persist) saveState(state);
   return report;
+}
+
+function ackPublished(watched, commits, report) {
+  const ok = [];
+  const failed = [];
+  for (const commit of commits || []) {
+    const cids = commit.cids || [];
+    const published = (report.published || []).some((p) => p.root === commit.root && p.sha === commit.sha);
+    const errored = (report.errors || []).some((e) => e.sha === commit.sha && (!cids.length || cids.indexOf(e.conversation_id) !== -1));
+    if (errored && !published) failed.push(commit);
+    else ok.push(commit);
+  }
+  if (ok.length) watched.ack(ok);
+  if (failed.length) watched.ack(failed, { revert: true });
 }
 
 function sleepSec(sec) {
